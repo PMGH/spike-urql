@@ -63,7 +63,7 @@ const [result, reexecuteQuery] = useQuery<{ country: Country }>({
 const { data, fetching, error } = result;
 ```
 
-For NextJS we can use the dedicated next-urql package which
+For NextJS we can use the dedicated next-urql package:
 ```typescript
 //_ app.tsx
 
@@ -79,5 +79,92 @@ export default withUrqlClient((_ssrExchange, ctx) => ({
 }))(App);
 ```
 ```typescript
+// MyComponent.tsx
 
+const DynamicFeaturedCountry = ({ code }: FeaturedCountryProps) => {
+  const [result, reexecuteQuery] = useQuery<{ country: Country }>({
+    query: GET_COUNTRY_BY_ID_QUERY,
+    variables: { code }
+  });
+  const { data, fetching, error } = result;
+  console.log({ data, fetching, error  })
+
+  if (fetching) {
+    return <span>Loading...</span>
+  }
+
+  if (error) {
+    return <span>Error: {error.message}</span>
+  }
+
+  if(data?.country) {
+    return <p>Featured Country: {data.country.name}</p>
+  }
+  return null;
+}
 ```
+
+#### SSR
+We need a bit more setup for SSR. We create an ssrExhange with isClient set to false and pass that to our `initUrqlClient`. `canEnableSuspense` is also set to false.
+
+```typescript
+export async function getStaticProps() {
+  const ssrCache = ssrExchange({ isClient: false });
+  const client = initUrqlClient({
+    url: 'https://countries.trevorblades.com/',
+    exchanges: [dedupExchange, cacheExchange, ssrCache, fetchExchange]
+  }, false); // canEnableSuspense set to false
+
+  // This query is used to populate the cache for the query used on this page
+  await client?.query(GET_COUNTRIES_QUERY, undefined, undefined).toPromise();
+
+  return {
+    props: {
+      // urqlState is a keyword here so withUrqlClient can pick it up
+      urqlState: ssrCache.extractData(),
+    },
+    revalidate: 600
+  };
+}
+
+export default withUrqlClient(ssr => ({
+  url: 'https://countries.trevorblades.com/'
+}),
+// additional urql client options
+{
+  staleWhileRevalidate: true
+}
+// Cannot specify { ssr: true } here so we don't wrap our component in getInitialProps
+)(CountriesPage);
+```
+
+#### Suspense
+We pass `canEnableSuspense` set to `false` when we set up `getStaticProps` to prevent it trying to use Suspense on the server.
+
+#### Infinite Scrolling
+https://formidable.com/open-source/urql/docs/basics/ui-patterns/#infinite-scrolling
+We can do this using something like:
+```typescript
+{isLastPage && todos.pageInfo.hasNextPage && (
+  <button onClick={() => onLoadMore(todos.pageInfo.endCursor)}>load more</button>
+)}
+```
+
+#### Prefetching
+https://formidable.com/open-source/urql/docs/basics/ui-patterns/#prefetching-data
+We can call `client.query(TodoQuery, { id }).toPromise();` based on user DOM events to do this.
+
+#### Reacting to focus and stale time
+https://formidable.com/open-source/urql/docs/basics/ui-patterns/#reacting-to-focus-and-stale-time
+We can use `refocusExchange` from the `@urql/exchange-refocus` package.
+
+#### Optimistic Updates
+https://formidable.com/open-source/urql/docs/graphcache/cache-updates/#optimistic-updates
+`optimistic` option can be passed to the `cacheExchange`
+
+#### Typescript
+https://formidable.com/open-source/urql/docs/basics/typescript-integration/
+
+#### Pagination
+https://formidable.com/open-source/urql/docs/basics/ui-patterns/#infinite-scrolling
+Make request manually with page number.
