@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { FeaturedCountryProps, StaticCountriesListProps } from "types/countries.types";
-import { useQuery } from "urql";
+import { cacheExchange, dedupExchange, fetchExchange, ssrExchange, useQuery } from "urql";
 import { GET_COUNTRIES_QUERY, GET_COUNTRY_BY_ID_QUERY } from "urql/queries";
 import ClientOnly from "components/client-only";
 import { Country } from "types/shared.types";
+import { initUrqlClient, withUrqlClient } from "next-urql";
 
 const StaticCountriesList = ({ countries }: StaticCountriesListProps) => {
   if (countries) {
@@ -39,8 +40,9 @@ const DynamicFeaturedCountry = ({ code }: FeaturedCountryProps) => {
   return null;
 }
 
-const CountriesPage = ({ countries: staticCountries }: any) => {
-  console.log({ staticCountries })
+const CountriesPage = () => {
+  const [res] = useQuery({ query: GET_COUNTRIES_QUERY });
+  console.log({ staticCountries: res.data.countries })
 
   return (
     <>
@@ -55,21 +57,36 @@ const CountriesPage = ({ countries: staticCountries }: any) => {
       </ClientOnly>
       <br />
       <h3>Countries</h3>
-      <StaticCountriesList countries={staticCountries} />
+      <StaticCountriesList countries={res.data.countries} />
     </>
   )
 }
 
 export async function getStaticProps() {
-  // const { data } = await useQuery({
-  //   query: GET_COUNTRIES_QUERY
-  // });
+  const ssrCache = ssrExchange({ isClient: false });
+  const client = initUrqlClient({
+    url: 'https://countries.trevorblades.com/',
+    exchanges: [dedupExchange, cacheExchange, ssrCache, fetchExchange]
+  }, false);
+
+  // This query is used to populate the cache for the query used on this page
+  await client?.query(GET_COUNTRIES_QUERY, undefined, undefined).toPromise();
 
   return {
     props: {
-      // countries: data.countries.slice(0, 4),
+      // urqlState is a keyword here so withUrqlClient can pick it up
+      urqlState: ssrCache.extractData(),
     },
+    revalidate: 600
   };
 }
 
-export default CountriesPage;
+export default withUrqlClient(ssr => ({
+  url: 'https://countries.trevorblades.com/'
+}),
+// additional urql client options
+{
+  staleWhileRevalidate: true
+}
+// Cannot specify { ssr: true } here so we don't wrap our component in getInitialProps
+)(CountriesPage);

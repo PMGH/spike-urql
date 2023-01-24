@@ -30,9 +30,54 @@ This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-opti
 - Wrap _app.tsx in urql Provider and pass UrqlClient into Provider
 - Use `useQuery` within a component
 ```typescript
+// _app.tsx
+
+import type { AppProps } from 'next/app'
+import { createClient, Provider } from 'urql'
+
+const urqlClient = createClient({
+  url: 'https://countries.trevorblades.com/',
+  // We would need the following for authorised requests
+  // fetchOptions: () => {
+  //   const token = getToken();
+  //   return {
+  //     headers: { authorization: token ? `Bearer ${token}` : '' },
+  //   };
+  // },
+});
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <Provider value={urqlClient}>
+      <Component {...pageProps} />
+    </Provider>
+  )
+}
+```
+```typescript
+// MyComponent.tsx
 const [result, reexecuteQuery] = useQuery<{ country: Country }>({
   query: GET_COUNTRY_BY_ID_QUERY,
   variables: { code }
 });
 const { data, fetching, error } = result;
+```
+
+For NextJS we can use the dedicated next-urql package which
+```typescript
+//_ app.tsx
+
+import { withUrqlClient } from 'next-urql';
+import type { AppProps } from 'next/app'
+
+function App({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />
+}
+
+export default withUrqlClient((_ssrExchange, ctx) => ({
+  url: 'https://countries.trevorblades.com/'
+}))(App);
+```
+```typescript
+
 ```

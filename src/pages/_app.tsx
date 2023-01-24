@@ -1,22 +1,12 @@
 import '@/styles/globals.css'
+import { withUrqlClient } from 'next-urql';
 import type { AppProps } from 'next/app'
-import { createClient, Provider } from 'urql'
 
-const urqlClient = createClient({
-  url: 'https://countries.trevorblades.com/',
-  // We would need the following for authorised requests
-  // fetchOptions: () => {
-  //   const token = getToken();
-  //   return {
-  //     headers: { authorization: token ? `Bearer ${token}` : '' },
-  //   };
-  // },
-});
-
-export default function App({ Component, pageProps }: AppProps) {
-  return (
-    <Provider value={urqlClient}>
-      <Component {...pageProps} />
-    </Provider>
-  )
+function App({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />
 }
+
+// Be aware that wrapping the _app component using withUrqlClient with the { ssr: true } option disables Next's "Automatic Static Optimization" for all our pages. It is thus preferred to enable server-side rendering on a per-page basis.
+export default withUrqlClient((_ssrExchange, ctx) => ({
+  url: 'https://countries.trevorblades.com/'
+}))(App);
