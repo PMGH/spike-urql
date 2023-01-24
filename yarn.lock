@@ -257,12 +257,20 @@
     "@typescript-eslint/types" "5.48.2"
     eslint-visitor-keys "^3.3.0"
 
-"@urql/core@^3.0.3":
+"@urql/core@>=3.0.0", "@urql/core@^3.0.3":
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/@urql/core/-/core-3.1.1.tgz#a49cd572360d01f2469a786b294fba2269a65e53"
   integrity sha512-Mnxtq4I4QeFJsgs7Iytw+HyhiGxISR6qtyk66c9tipozLZ6QVxrCiUPF2HY4BxNIabaxcp+rivadvm8NAnXj4Q==
   dependencies:
     wonka "^6.1.2"
+
+"@urql/exchange-persisted-fetch@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@urql/exchange-persisted-fetch/-/exchange-persisted-fetch-2.0.0.tgz#40522065525718f79a199bb594f90d0d12c09597"
+  integrity sha512-Cb6VJ3kt/ucpvuzUXHvkNhfFWZudqwZ63w9xs/Sr5Ck/vkjnXNa8YkwmPJRXBPkRRyS7++n4yGMsPtl8Aa1OlA==
+  dependencies:
+    "@urql/core" ">=3.0.0"
+    wonka "^6.0.0"
 
 acorn-jsx@^5.3.2:
   version "5.3.2"

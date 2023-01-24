@@ -42,7 +42,7 @@ const DynamicFeaturedCountry = ({ code }: FeaturedCountryProps) => {
 
 const CountriesPage = () => {
   const [res] = useQuery({ query: GET_COUNTRIES_QUERY });
-  console.log({ staticCountries: res.data.countries })
+  console.log({ staticCountries: res?.data?.countries, res })
 
   return (
     <>
